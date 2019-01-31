@@ -1,4 +1,5 @@
 local t = 0
+local removed = {enemies = {}, towers = {}}
 
 local Gameplay = new 'state.base' {
   graphics = nil,
@@ -97,15 +98,6 @@ function Gameplay:buildTower(i, j, spec)
   self.grid:put(i, j, tower.sprite, 'Tower Built!')
 end
 
---[[ obsoleto
-
-function Gameplay:createEnemy(i,j,spec)
-  local enemy = new 'graphics.enemy_sprite' {
-    spec = require('database.enemies.' .. spec),
-    grid = grid
-  }
-  grid:put(i,j,enemy,'Enemy Spawned!')
-end--]]
 
 function Gameplay:selectTower(i)
   local button = self.buy_buttons[i]
@@ -169,11 +161,25 @@ function Gameplay:onUpdate(dt)
       if tower.pos.x == enemy.pos.x and tower.pos.y == enemy.pos.y then
         tower.hp = tower.hp - enemy.spec.power
         enemy.pos.y = enemy.pos.y + 2
+        if tower.hp <= 0  then
+          removed.towers[j] = true          
+        end
       end
     end
   end
 
+  -- remove as torres com vida menor que 0
+  -- testar se a posição continua válida
+  for i = 1, m do
+    print (removed)
+    if removed.towers[i] then
+      self.entities.towers[i].sprite:destroy()
+      table.remove(self.entities.towers, i)
+      removed.towers[i] = false
+    end
+  end
 
+  -- não usar os tamanhos das tables towers e enemies dps daqui
   -- Checa se os inimigos chegaram na parte esquerda da tela
   -- Falta desenhar a tela de game over
   for _,enemy in pairs(self.entities.enemies) do

@@ -31,5 +31,4 @@ function Entity:collidesWith(other)
   return (self.spec.hitbox + self.pos):intersects(other.spec.hitbox + other.pos)
 end
 
-
 return Entity
