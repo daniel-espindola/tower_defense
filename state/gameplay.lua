@@ -10,7 +10,7 @@ local Gameplay = new 'state.base' {
   selected = 1,
   page = 1,
   page_num = 1,
-  entities = {},
+  entities = {enemies = {}, towers = {}},
 }
 
 function Gameplay:onEnter(graphics)
@@ -86,12 +86,20 @@ end
 
 function Gameplay:buildTower(i, j, spec)
   local spec = self.buy_buttons[self.selected].tower_spec
-  local tower = new 'graphics.tower_sprite' {
+  local tower_sprite = new 'graphics.tower_sprite' {
     spec = spec,
     grid = self.grid
   }
-  self.grid:put(i, j, tower, 'Tower Built!')
+  
+  -- cria o objeto torre e coloca o sprite da torre dentro dele
+  local tower = Gameplay:makeEntity(spec.path,new(Vec) {i,j}, 'tower_sprite')
+  tower.sprite = tower_sprite
+  
+  -- coloca o sprite da torre no grid
+  self.grid:put(i, j, tower.sprite, 'Tower Built!')
 end
+
+--[[ obsoleto
 
 function Gameplay:createEnemy(i,j,spec)
   local enemy = new 'graphics.enemy_sprite' {
@@ -99,7 +107,7 @@ function Gameplay:createEnemy(i,j,spec)
     grid = grid
   }
   grid:put(i,j,enemy,'Enemy Spawned!')
-end
+end--]]
 
 function Gameplay:selectTower(i)
   local button = self.buy_buttons[i]
@@ -110,42 +118,51 @@ function Gameplay:selectTower(i)
   end
 end
 
-function Gameplay:makeEntity(specname,pos,sprite)
+function Gameplay:makeEntity(specname,pos,sprite_name)
+  local spec = require('database.' .. specname)
+  
   local new_entity = new 'entity' {
     pos = new(Vec) { pos:get() },
-    spec = require('database.enemies.' .. specname),
+    spec = spec,
     
-    world = self, -- referência ao gameplay pra poder criar projéteis posteriormente
-    sprite = new ('graphics.' .. sprite)  {
-      spec = require('database.enemies.' .. specname),
+    gameplay = self, -- referência ao gameplay pra poder criar projéteis posteriormente
+    sprite = new ('graphics.' .. sprite_name)  {
+      spec = spec,
       grid = grid
     },
   }
   
-  table.insert(self.entities,new_entity)
+  table.insert(self.entities[new_entity.spec.group],new_entity)
   return new_entity
 end
 
 function Gameplay:onUpdate(dt)
-  -- Nada por enquanto
+  -- marca o tempo
   t = t + dt
   
-  -- cria inimigos a cada 5 segudos
-  if(t>ct*5) then
+  -- cria inimigos a cada 3.5 segudos
+  if(t>3.5) then
+    t = 0
     pos = new(Vec) {love.math.random(1,6), 12}
-    local enemy = Gameplay:makeEntity('zombie',pos, 'enemy_sprite')
+    local enemy = Gameplay:makeEntity('enemies.zombie',pos, 'enemy_sprite')
     grid:put(pos.x,pos.y,enemy.sprite,'Enemy Spawned!')
-    ct = ct +1
   end
   
   -- Atualiza a posição dos inimigos
-  for _,enemy in pairs(self.entities) do
+  for _,enemy in pairs(self.entities.enemies) do
     enemy:update(dt)
     grid:put(enemy.pos.x, enemy.pos.y, enemy.sprite,'')
   end
   
+  -- mostra os hps das torres (teste)
+  --[[
+  for _,tower in pairs(self.entities.towers) do
+    print(tower.hp .. tower.spec.max_hp)
+  end
+  --]]
+  
   -- Checa se os inimigos chegaram na parte esquerda da tela
-  for _,enemy in pairs(self.entities) do
+  for _,enemy in pairs(self.entities.enemies) do
     if enemy.pos.y == 1 then
       love.event.quit()
     end
