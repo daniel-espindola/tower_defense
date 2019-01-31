@@ -1,5 +1,4 @@
-t = 0
-ct = 1
+local t = 0
 
 local Gameplay = new 'state.base' {
   graphics = nil,
@@ -154,10 +153,27 @@ function Gameplay:onUpdate(dt)
   end
   
   -- mostra os hps das torres (teste)
-  for _,tower in pairs(self.entities.towers) do
-    print(tower.hp .. tower.spec.max_hp)
-  end
+  --[[for _,tower in pairs(self.entities.towers) do
+    print(tower.hp .. "   " .. tower.spec.max_hp)
+  end--]]
   
+  -- checa se houve dano às torres 
+  local n = #self.entities.enemies
+  local m = #self.entities.towers
+
+  for i = 1,n do
+    local enemy = self.entities.enemies[i]
+    for j = 1,m do
+      local tower = self.entities.towers[j]
+      
+      if tower.pos.x == enemy.pos.x and tower.pos.y == enemy.pos.y then
+        tower.hp = tower.hp - enemy.spec.power
+        enemy.pos.y = enemy.pos.y + 2
+      end
+    end
+  end
+
+
   -- Checa se os inimigos chegaram na parte esquerda da tela
   -- Falta desenhar a tela de game over
   for _,enemy in pairs(self.entities.enemies) do
