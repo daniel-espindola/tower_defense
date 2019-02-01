@@ -73,6 +73,10 @@ function Grid:pointToTile(point)
   return math.ceil(point.y/self.tilesize), math.ceil(point.x/self.tilesize)
 end
 
+function Grid:remove(i,j)
+  self.map[i][j] = false
+end
+
 function Grid:isEmpty(i, j)
   return not self.map[i][j]
 end

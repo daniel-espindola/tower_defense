@@ -1,5 +1,4 @@
-t = 0
-ct = 1
+local t = 0
 
 local Gameplay = new 'state.base' {
   graphics = nil,
@@ -11,6 +10,7 @@ local Gameplay = new 'state.base' {
   page = 1,
   page_num = 1,
   entities = {enemies = {}, towers = {}},
+  removed = {enemies = {}, towers = {}},
 }
 
 function Gameplay:onEnter(graphics)
@@ -43,7 +43,6 @@ function Gameplay:createGrid()
   self.grid = new 'graphics.grid' {}
   self.grid.selected_callback = function(i, j) self:buildTower(i, j) end
   self.graphics:add('bg', self.grid)
-  grid = self.grid
 end
 
 function Gameplay:createBuyButtons()
@@ -99,15 +98,6 @@ function Gameplay:buildTower(i, j, spec)
   self.grid:put(i, j, tower.sprite, 'Tower Built!')
 end
 
---[[ obsoleto
-
-function Gameplay:createEnemy(i,j,spec)
-  local enemy = new 'graphics.enemy_sprite' {
-    spec = require('database.enemies.' .. spec),
-    grid = grid
-  }
-  grid:put(i,j,enemy,'Enemy Spawned!')
-end--]]
 
 function Gameplay:selectTower(i)
   local button = self.buy_buttons[i]
@@ -128,7 +118,7 @@ function Gameplay:makeEntity(specname,pos,sprite_name)
     gameplay = self, -- referência ao gameplay pra poder criar projéteis posteriormente
     sprite = new ('graphics.' .. sprite_name)  {
       spec = spec,
-      grid = grid
+      grid = self.grid
     },
   }
   
@@ -140,28 +130,60 @@ function Gameplay:onUpdate(dt)
   -- marca o tempo
   t = t + dt
   
-  -- cria inimigos a cada 3.5 segudos
-  if(t>3.5) then
+  -- cria inimigos a cada 1.5 segudos
+  if(t>1.5) then
     t = 0
-    pos = new(Vec) {love.math.random(1,6), 12}
+    pos = new(Vec) {love.math.random(1,6), 12} -- posição no grid (y,x)
     local enemy = Gameplay:makeEntity('enemies.zombie',pos, 'enemy_sprite')
-    grid:put(pos.x,pos.y,enemy.sprite,'Enemy Spawned!')
+    
+    -- calcula o pixel posição da sprite baseado nas informações do grid
+    enemy.sprite.position = self.grid.position + new(Vec) {pos.y-0.5, pos.x-0.5} * self.grid.tilesize
+    self.graphics:add('fx', enemy.sprite)
   end
   
   -- Atualiza a posição dos inimigos
   for _,enemy in pairs(self.entities.enemies) do
-    enemy:update(dt)
-    grid:put(enemy.pos.x, enemy.pos.y, enemy.sprite,'')
+    --enemy:update(dt)
+    --self.grid:put(enemy.pos.x, enemy.pos.y, enemy.sprite,'')
   end
   
   -- mostra os hps das torres (teste)
-  --[[
-  for _,tower in pairs(self.entities.towers) do
-    print(tower.hp .. tower.spec.max_hp)
-  end
-  --]]
+  --[[for _,tower in pairs(self.entities.towers) do
+    print(tower.hp .. "   " .. tower.spec.max_hp)
+  end--]]
   
+  -- checa se houve dano às torres 
+  local n = #self.entities.enemies
+  local m = #self.entities.towers
+
+  for i = 1,n do
+    local enemy = self.entities.enemies[i]
+    for j = 1,m do
+      local tower = self.entities.towers[j]
+      
+      if tower.pos.x == enemy.pos.x and tower.pos.y == enemy.pos.y then
+        tower.hp = tower.hp - enemy.spec.power
+        enemy.pos.y = enemy.pos.y + 2
+        if tower.hp <= 0  then
+          self.removed.towers[j] = true          
+        end
+      end
+    end
+  end
+
+  -- remove as torres com vida menor que 0
+  -- testar se a posição continua válida
+  for i = 1, m do
+    if self.removed.towers[i] then
+      self.entities.towers[i].sprite:destroy()
+      table.remove(self.entities.towers, i)
+      self.removed.towers[i] = false
+    end
+  end
+
+  -- não usar os tamanhos das tables towers e enemies dps daqui
   -- Checa se os inimigos chegaram na parte esquerda da tela
+  -- Falta desenhar a tela de game over
   for _,enemy in pairs(self.entities.enemies) do
     if enemy.pos.y == 1 then
       love.event.quit()
