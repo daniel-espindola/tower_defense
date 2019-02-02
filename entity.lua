@@ -8,6 +8,7 @@ local Entity = new(Object) {
   power = nil,
   cooldown = 0,
   sprite = nil,
+  grid = nil,
 }
 
 function Entity:init()
@@ -16,6 +17,7 @@ function Entity:init()
   self.movement = self.spec.movement or false
   self.sprite = self.sprite or nil
   self.sprite.position = new(Vec) {400,400}
+  self.spec.speed = self.spec.speed or 0
 end
 
 function Entity:setMovement(movement)
@@ -23,15 +25,13 @@ function Entity:setMovement(movement)
 end
 
 function Entity:update(dt)
-  self.cooldown = self.cooldown + dt
-  if self.movement and (self.cooldown > self.spec.delay) then
-    self.pos.y = self.pos.y -1
-    self.cooldown = 0
-  end
+  self.sprite.position:translate(new(Vec){-1,0} * self.spec.speed * dt)
+  self.pos = self.sprite.position
 end
 
 function Entity:collidesWith(other)
-  return (self.spec.hitbox + self.pos):intersects(other.spec.hitbox + other.pos)
+  print(self.spec.hitbox + self.pos)
+  return (self.spec.hitbox + (self.pos)):intersects(other.spec.hitbox + (other.pos))
 end
 
 return Entity

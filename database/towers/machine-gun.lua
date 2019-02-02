@@ -5,7 +5,7 @@ return {
   sprite = 'sentry-gun',
   power = 20,
   max_hp = 80,
-  hitbox = { -4, 4, -4, 4},
+  hitbox = new(Box) { -30, 30, -30, 30},
   cost = 30,
   group = 'towers',
   description = "Sentry, comin' up",

@@ -1,4 +1,5 @@
 local t = 0
+local timer = 0
 
 local Gameplay = new 'state.base' {
   graphics = nil,
@@ -11,6 +12,7 @@ local Gameplay = new 'state.base' {
   page_num = 1,
   entities = {enemies = {}, towers = {}},
   removed = {enemies = {}, towers = {}},
+  spawn_cd = 3,
 }
 
 function Gameplay:onEnter(graphics)
@@ -89,11 +91,10 @@ function Gameplay:buildTower(i, j, spec)
     spec = spec,
     grid = self.grid
   }
-  
   -- cria o objeto torre e coloca o sprite da torre dentro dele
   local tower = Gameplay:makeEntity(spec.path,new(Vec) {i,j}, 'tower_sprite')
   tower.sprite = tower_sprite
-  
+  tower.gridPos = {i,j}
   -- coloca o sprite da torre no grid
   self.grid:put(i, j, tower.sprite, 'Tower Built!')
 end
@@ -110,7 +111,6 @@ end
 
 function Gameplay:makeEntity(specname,pos,sprite_name)
   local spec = require('database.' .. specname)
-  
   local new_entity = new 'entity' {
     pos = new(Vec) { pos:get() },
     spec = spec,
@@ -121,7 +121,6 @@ function Gameplay:makeEntity(specname,pos,sprite_name)
       grid = self.grid
     },
   }
-  
   table.insert(self.entities[new_entity.spec.group],new_entity)
   return new_entity
 end
@@ -129,23 +128,33 @@ end
 function Gameplay:onUpdate(dt)
   -- marca o tempo
   t = t + dt
+  timer = timer + dt
+  
+  -- a cada 60 segundos diminui o cooldown de spawn dos inimigos
+  if timer>60 then 
+    timer = 0
+    self.spawn_cd = math.min(0.5, self.spawn_cd-0.5)
+  end
   
   -- cria inimigos a cada 1.5 segudos
-  if(t>1.5) then
-    t = 0
+  if(t>self.spawn_cd) then
+    t = -100
     pos = new(Vec) {love.math.random(1,6), 12} -- posição no grid (y,x)
     local enemy = Gameplay:makeEntity('enemies.zombie',pos, 'enemy_sprite')
-    
     -- calcula o pixel posição da sprite baseado nas informações do grid
-    enemy.sprite.position = self.grid.position + new(Vec) {pos.y-0.5, pos.x-0.5} * self.grid.tilesize
+    local position = self.grid.position + new(Vec) {pos.y-0.5, pos.x-0.5} * self.grid.tilesize
+    enemy.sprite.position = position
     self.graphics:add('fx', enemy.sprite)
   end
   
-  -- Atualiza a posição dos inimigos
+  -- Atualiza as torres e os inimigos 
   for _,enemy in pairs(self.entities.enemies) do
-    --enemy:update(dt)
-    --self.grid:put(enemy.pos.x, enemy.pos.y, enemy.sprite,'')
+    enemy:update(dt)
   end
+  for _,tower in pairs(self.entities.towers) do
+    tower:update(dt)
+  end
+  --
   
   -- mostra os hps das torres (teste)
   --[[for _,tower in pairs(self.entities.towers) do
@@ -161,9 +170,9 @@ function Gameplay:onUpdate(dt)
     for j = 1,m do
       local tower = self.entities.towers[j]
       
-      if tower.pos.x == enemy.pos.x and tower.pos.y == enemy.pos.y then
-        tower.hp = tower.hp - enemy.spec.power
-        enemy.pos.y = enemy.pos.y + 2
+      if enemy:collidesWith(tower) then
+        tower.hp = tower.hp - enemy.spec.power -- remove a vida da torre 
+        enemy.sprite.position.x = enemy.sprite.position.x + 100 -- joga o inimigo 100 pixels pra trás
         if tower.hp <= 0  then
           self.removed.towers[j] = true          
         end
@@ -175,8 +184,9 @@ function Gameplay:onUpdate(dt)
   -- testar se a posição continua válida
   for i = 1, m do
     if self.removed.towers[i] then
-      self.entities.towers[i].sprite:destroy()
-      table.remove(self.entities.towers, i)
+      self.grid:remove(unpack(self.entities.towers[i].gridPos)) -- torna a posição do grid válida de novo
+      self.entities.towers[i].sprite:destroy() -- para de desenhar o sprite
+      table.remove(self.entities.towers, i) -- mata a entidade
       self.removed.towers[i] = false
     end
   end
@@ -185,12 +195,13 @@ function Gameplay:onUpdate(dt)
   -- Checa se os inimigos chegaram na parte esquerda da tela
   -- Falta desenhar a tela de game over
   for _,enemy in pairs(self.entities.enemies) do
-    if enemy.pos.y == 1 then
+    if enemy.sprite.position.x - self.grid.position.x <= 20 then
       love.event.quit()
     end
   end
   
 end
+
 
 return Gameplay
 
