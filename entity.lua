@@ -30,7 +30,6 @@ function Entity:update(dt)
 end
 
 function Entity:collidesWith(other)
-  print(self.spec.hitbox + self.pos)
   return (self.spec.hitbox + (self.pos)):intersects(other.spec.hitbox + (other.pos))
 end
 

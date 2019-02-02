@@ -6,9 +6,9 @@ return {
   cost = 30,
   delay = 2,
   movement = true,
-  hitbox = new(Box) {-30, 30, -30, 30},
+  hitbox = new(Box) {-20, 20, -20, 20},
   description = ":(",
   group = 'enemies',
-  speed = 100,
+  speed = 400,
   max_hp = 100,
 }

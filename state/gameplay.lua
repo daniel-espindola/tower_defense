@@ -12,7 +12,7 @@ local Gameplay = new 'state.base' {
   page_num = 1,
   entities = {enemies = {}, towers = {}},
   removed = {enemies = {}, towers = {}},
-  spawn_cd = 3,
+  spawn_cd = 4,
 }
 
 function Gameplay:onEnter(graphics)
