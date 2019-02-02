@@ -9,6 +9,6 @@ return {
   hitbox = new(Box) {-20, 20, -20, 20},
   description = ":(",
   group = 'enemies',
-  speed = 400,
+  speed = 50,
   max_hp = 100,
 }
