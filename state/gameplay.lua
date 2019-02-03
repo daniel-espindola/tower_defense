@@ -91,6 +91,7 @@ function Gameplay:buildTower(i, j, spec)
     spec = spec,
     grid = self.grid
   }
+  self.counter:subtract(spec.cost)
   -- cria o objeto torre e coloca o sprite da torre dentro dele
   local tower = Gameplay:makeEntity(spec.path,new(Vec) {i,j}, 'tower_sprite')
   tower.sprite = tower_sprite
@@ -132,9 +133,9 @@ function Gameplay:onUpdate(dt)
   timer = timer + dt
   
   -- a cada 60 segundos diminui o cooldown de spawn dos inimigos
-  if timer>10 then 
+  if timer>60 then 
     timer = 0
-    self.spawn_cd = math.max(0.1, self.spawn_cd-0.5)
+    self.spawn_cd = math.max(0.5, self.spawn_cd-0.5)
   end
   
   -- cria inimigos a cada 1.5 segudos
@@ -149,9 +150,9 @@ function Gameplay:onUpdate(dt)
     
   end
   
-  Gameplay:checkEntity('towers',self.grid)
-  Gameplay:checkEntity('enemies',self.grid)
-  Gameplay:checkEntity('bullets',self.grid)
+  Gameplay:checkEntity('towers',self.grid,self.counter)
+  Gameplay:checkEntity('enemies',self.grid,self.counter)
+  Gameplay:checkEntity('bullets',self.grid,self.counter)
 
   Gameplay:deleteEntity(self.grid)
   
@@ -171,7 +172,7 @@ end
 
 -- essa função recebe uma string com o nome de alguma entidade do jogo
 -- e checka se a entidade sofreu dano, morreu ou saiu da tela. Marca a entidade para ser removida se for o caso.
-function Gameplay:checkEntity(entity_type, grid)
+function Gameplay:checkEntity(entity_type, grid, counter)
   local o = #self.entities.bullets
   local n = #self.entities.enemies
   local m = #self.entities.towers
@@ -207,7 +208,10 @@ function Gameplay:checkEntity(entity_type, grid)
           enemy.hp = enemy.hp - bullet.tower.spec.power
           self.removed.bullets[j] = true
         end
-        if enemy.hp < 0 then self.removed.enemies[i] = true end
+        if enemy.hp < 0 then 
+          self.removed.enemies[i] = true 
+          counter:add(enemy.spec.cost)
+        end
       end
     end
   end

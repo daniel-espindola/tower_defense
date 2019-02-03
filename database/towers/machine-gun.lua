@@ -3,7 +3,7 @@ return {
   name = "MACHINE GUN",
   path = 'towers.machine-gun',
   sprite = 'sentry-gun',
-  power = 20,
+  power = 10,
   max_hp = 80,
   bullet_name = 'bullet',
   hitbox = new(Box) { -10, 10, -10, 10},

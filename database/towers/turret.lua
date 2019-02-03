@@ -3,7 +3,7 @@ return {
   name = "TURRET",
   path = 'towers.turret',
   sprite = 'tesla-turret',
-  power = 10,
+  power = 5,
   max_hp = 120,
   hitbox = new(Box) { -10, 10, -10, 10},
   bullet_name = 'bullet',
