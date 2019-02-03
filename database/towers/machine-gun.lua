@@ -5,9 +5,12 @@ return {
   sprite = 'sentry-gun',
   power = 20,
   max_hp = 80,
+  bullet_name = 'bullet',
   hitbox = new(Box) { -10, 10, -10, 10},
   cost = 30,
   group = 'towers',
+  firerate = 4,
+  bullet_offset = (new (Vec) {-1,0.35} ) * 30,
   description = "Sentry, comin' up",
 }
 

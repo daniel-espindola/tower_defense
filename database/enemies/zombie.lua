@@ -4,6 +4,7 @@ return {
   path = 'enemies.zombie',
   power = 20,
   cost = 30,
+  dir = new(Vec) {-1,0},
   delay = 2,
   movement = true,
   hitbox = new(Box) {-20, 20, -20, 20},
