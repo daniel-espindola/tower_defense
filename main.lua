@@ -32,6 +32,7 @@ end
 
 function love.draw()
   _graphics:drawLayers()
+  love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
 end
 
 function love.mousepressed(x, y, button)

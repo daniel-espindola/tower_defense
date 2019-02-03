@@ -134,7 +134,7 @@ function Gameplay:onUpdate(dt)
   -- a cada 60 segundos diminui o cooldown de spawn dos inimigos
   if timer>10 then 
     timer = 0
-    self.spawn_cd = math.max(0.5, self.spawn_cd-0.5)
+    self.spawn_cd = math.max(0.1, self.spawn_cd-0.5)
   end
   
   -- cria inimigos a cada 1.5 segudos
@@ -147,91 +147,13 @@ function Gameplay:onUpdate(dt)
     enemy.sprite.position = position
     self.graphics:add('entities', enemy.sprite)
     
-    --local bullet = Gameplay:makeEntity('bullet', position + new(Vec) {-10,0},'bullet_sprite')
-    --self.graphics:add('entities', bullet.sprite) 
   end
   
-  -- mostra os hps das torres (teste)
-  --[[for _,tower in pairs(self.entities.towers) do
-    print(tower.hp .. "   " .. tower.spec.max_hp)
-  end--]]
-  
-  -- checa se houve dano às torres
-  local o = #self.entities.bullets
-  local n = #self.entities.enemies
-  local m = #self.entities.towers
+  Gameplay:checkEntity('towers',self.grid)
+  Gameplay:checkEntity('enemies',self.grid)
+  Gameplay:checkEntity('bullets',self.grid)
 
-  for i = 1,n do
-    local enemy = self.entities.enemies[i]
-    for j = 1,m do
-      local tower = self.entities.towers[j]
-      
-      if enemy:collidesWith(tower) then
-        tower.hp = tower.hp - enemy.spec.power -- remove a vida da torre 
-        enemy.sprite.position.x = enemy.sprite.position.x + 100 -- joga o inimigo 100 pixels pra trás
-        if tower.hp <= 0  then
-          self.removed.towers[j] = true          
-        end
-      end
-    end
-  end
-  
-  --checa os inimigos acertados por balas
-  for i = 1,n do
-    local enemy = self.entities.enemies[i]
-    for j = 1,o do
-      local bullet = self.entities.bullets[j]
-      if enemy:collidesWith(bullet) then
-        enemy.hp = enemy.hp - bullet.tower.spec.power
-        self.removed.bullets[j] = true
-      end
-    end
-  end
-  
-  -- remove as torres marcadas
-  -- testar se a posição continua válida
-  for i = 1, m do
-    if self.removed.towers[i] then
-      self.grid:remove(unpack(self.entities.towers[i].gridPos)) -- torna a posição do grid válida de novo
-      self.entities.towers[i].sprite:destroy() -- para de desenhar o sprite
-      table.remove(self.entities.towers, i) -- mata a entidade
-      self.removed.towers[i] = false
-    end
-  end
-  
-  -- marca os inimigos com vida menor que 0
-  for i = 1, n do
-    if self.entities.enemies[i].hp <= 0 then
-      self.removed.enemies[i] = true
-    end
-  end
-  
-  -- remove os inimigos marcados
-  for i = 1, n do
-    if self.removed.enemies[i] then
-      self.entities.enemies[i].sprite:destroy() -- para de desenhar o sprite
-      table.remove(self.entities.enemies, i) -- mata a entidade
-      self.removed.enemies[i] = false
-    end
-  end
-  
-  -- remove os projéteis da tela
-  for i = 1, o do
-    if self.removed.bullets[i] then
-      self.entities.bullets[i].sprite:destroy() -- para de desenhar o sprite
-      table.remove(self.entities.bullets, i) -- mata a entidade
-      self.removed.bullets[i] = false
-    end
-  end
-
-  -- não usar os tamanhos das tables towers e enemies dps daqui
-  -- Checa se os inimigos chegaram na parte esquerda da tela
-  -- ************ Falta desenhar a tela de game over ************
-  for _,enemy in pairs(self.entities.enemies) do
-    if enemy.sprite.position.x - self.grid.position.x <= 20 then
-      love.event.quit()
-    end
-  end
+  Gameplay:deleteEntity(self.grid)
   
   -- atualiza as torres e os inimigos
   for _,enemy in pairs(self.entities.enemies) do
@@ -247,6 +169,87 @@ function Gameplay:onUpdate(dt)
   end
 end
 
+-- essa função recebe uma string com o nome de alguma entidade do jogo
+-- e checka se a entidade sofreu dano, morreu ou saiu da tela. Marca a entidade para ser removida se for o caso.
+function Gameplay:checkEntity(entity_type, grid)
+  local o = #self.entities.bullets
+  local n = #self.entities.enemies
+  local m = #self.entities.towers
+  local i,j = 1,1
+  
+  if entity_type == 'towers' then -- checa dano às torres e marca para remoção as que ficaram com menos de 0 de hp
+    for i = 1,n do
+      local enemy = self.entities.enemies[i]
+      for j = 1,m do
+        local tower = self.entities.towers[j]
+          
+        if enemy:collidesWith(tower) then
+          tower.hp = tower.hp - enemy.spec.power -- remove a vida da torre 
+          enemy.sprite.position.x = enemy.sprite.position.x + 100 -- joga o inimigo 100 pixels pra trás
+          if tower.hp <= 0  then
+            self.removed.towers[j] = true          
+          end
+        end
+      end
+    end
+  end
+  
+  if entity_type == 'enemies' then -- checa dano aos inimigos e marca para remoção os que morreram
+    for i = 1,n do
+      local enemy = self.entities.enemies[i]
+      --checa se algum inimigo chegou na 'base' do player, sim -> gameOver
+      if enemy.sprite.position.x - grid.position.x <= 20 then
+        love.event.quit()
+      end
+      for j = 1,o do
+        local bullet = self.entities.bullets[j]
+        if enemy:collidesWith(bullet) then
+          enemy.hp = enemy.hp - bullet.tower.spec.power
+          self.removed.bullets[j] = true
+        end
+        if enemy.hp < 0 then self.removed.enemies[i] = true end
+      end
+    end
+  end
 
+  if entity_type == 'bullets' then -- checa se alguma bala saiu do grid
+    for i=1,o do
+      local bullet = self.entities.bullets[i]
+      if grid.position.x + grid.columns * grid.tilesize < bullet.sprite.position.x then
+        self.removed.bullets[i] = true
+      end
+    end
+  end
+end
+
+function Gameplay:deleteEntity(grid)
+  -- remove as torres maracadas
+  for i = #self.entities.towers,1,-1 do
+    if self.removed.towers[i] then
+      grid:remove(unpack(self.entities.towers[i].gridPos)) -- torna a posição do grid válida de novo
+      self.entities.towers[i].sprite:destroy() -- para de desenhar o sprite
+      table.remove(self.entities.towers, i) -- mata a entidade
+      self.removed.towers[i] = false
+    end
+  end
+  -- remove os inimigos marcados
+  for i = #self.entities.enemies,1,-1 do
+    if self.removed.enemies[i] then
+      self.entities.enemies[i].sprite:destroy() -- para de desenhar o sprite ** bug aqui (index nil value)
+      table.remove(self.entities.enemies, i) -- mata a entidade
+      self.removed.enemies[i] = false
+    end
+  end
+  
+  -- remove os projéteis da tela
+  for i = #self.entities.bullets,1,-1 do
+    if self.removed.bullets[i] then
+      self.entities.bullets[i].sprite:destroy() -- para de desenhar o sprite *** bug aqui (index nil value)
+      table.remove(self.entities.bullets, i) -- mata a entidade
+      self.removed.bullets[i] = false
+    end
+  end
+end
+        
 return Gameplay
 
