@@ -11,23 +11,23 @@ function Counter:init()
 end
 
 function Counter:getValue()
-  return self.value + self.change
+  return self.value
 end
 
 function Counter:add(value)
-  self.change = math.floor(value)
+  self.change = self.change + math.floor(value)
 end
 
 function Counter:subtract(value)
-  self.change = -math.floor(value)
+  self.change = self.change -math.floor(value)
 end
 
 function Counter:update(dt)
   local amount = self.change
   if amount > 0 then
-    amount = math.min(amount, 80 * dt)
+    amount = math.min(amount, 40 * dt)
   elseif amount < 0 then
-    amount = math.max(amount, -80 * dt)
+    amount = math.max(amount, -40 * dt)
   end
   self.change = self.change - amount
   self.value = self.value + amount
