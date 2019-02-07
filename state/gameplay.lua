@@ -88,7 +88,6 @@ end
 function Gameplay:buildTower(i, j, spec)
   local spec = self.buy_buttons[self.selected].tower_spec
   if self.counter:getValue() < spec.cost then return 404 end -- caso não tenha dinheiro, sai da função
-  
   local tower_sprite = new 'graphics.tower_sprite' {
     spec = spec,
     grid = self.grid
@@ -96,6 +95,7 @@ function Gameplay:buildTower(i, j, spec)
   self.counter:subtract(spec.cost)
   -- cria o objeto torre e coloca o sprite da torre dentro dele
   local tower = Gameplay:makeEntity(spec.path,new(Vec) {i,j}, 'tower_sprite')
+  tower.counter = self.counter
   tower.sprite = tower_sprite
   tower.gridPos = {i,j}
   -- coloca o sprite da torre no grid
@@ -117,7 +117,6 @@ function Gameplay:makeEntity(specname,pos,sprite_name)
   local new_entity = new 'entity' {
     pos = new(Vec) { pos:get() },
     spec = spec,
-    
     Gameplay = self, -- referência ao gameplay pra poder criar projéteis posteriormente
     sprite = new ('graphics.' .. sprite_name)  {
       spec = spec,
@@ -144,19 +143,20 @@ function Gameplay:onUpdate(dt)
   if(t>self.spawn_cd) then
     t = 0
     pos = new(Vec) {love.math.random(1,6), 12} -- posição no grid (y,x)
-    local enemy = Gameplay:makeEntity('enemies.zombie', pos, 'enemy_sprite')
+    local zombie_type = love.math.random(1,4) -- determina qual zumbi irá spawnar
+    local enemy = self:makeEntity('enemies.zombie' .. zombie_type, pos, 'enemy_sprite')
     -- calcula o pixel posição da sprite baseado nas informações do grid
-    local position = self.grid.position + new(Vec) {pos.y-0.5, pos.x-0.5} * self.grid.tilesize
+    position = self.grid.position + new(Vec) {pos.y-0.5, pos.x-0.5} * self.grid.tilesize
     enemy.sprite.position = position
     self.graphics:add('entities', enemy.sprite)
     
   end
   
-  Gameplay:checkEntity('towers',self.grid,self.counter,self.graphics)
-  Gameplay:checkEntity('enemies',self.grid,self.counter,self.graphics)
-  Gameplay:checkEntity('bullets',self.grid,self.counter,self.graphics)
+  self:checkEntity('towers')
+  self:checkEntity('enemies')
+  self:checkEntity('bullets')
 
-  Gameplay:deleteEntity(self.grid,self.counter)
+  self:deleteEntity()
   
   -- atualiza as torres e os inimigos
   for _,enemy in pairs(self.entities.enemies) do
@@ -174,7 +174,7 @@ end
 
 -- essa função recebe uma string com o nome de alguma entidade do jogo
 -- e checka se a entidade sofreu dano, morreu ou saiu da tela. Marca a entidade para ser removida se for o caso.
-function Gameplay:checkEntity(entity_type, grid, counter,graphics)
+function Gameplay:checkEntity(entity_type)
   local o = #self.entities.bullets
   local n = #self.entities.enemies
   local m = #self.entities.towers
@@ -201,7 +201,7 @@ function Gameplay:checkEntity(entity_type, grid, counter,graphics)
     for i = 1,n do
       local enemy = self.entities.enemies[i]
       --checa se algum inimigo chegou na 'base' do player, sim -> gameOver
-      if enemy.sprite.position.x - grid.position.x <= 20 then
+      if enemy.sprite.position.x - self.grid.position.x <= 20 then
         love.event.quit()
       end
       for j = 1,o do
@@ -220,18 +220,18 @@ function Gameplay:checkEntity(entity_type, grid, counter,graphics)
   if entity_type == 'bullets' then -- checa se alguma bala saiu do grid
     for i=1,o do
       local bullet = self.entities.bullets[i]
-      if grid.position.x + grid.columns * grid.tilesize < bullet.sprite.position.x then
+      if self.grid.position.x + self.grid.columns * self.grid.tilesize < bullet.sprite.position.x then
         self.removed.bullets[i] = true
       end
     end
   end
 end
 
-function Gameplay:deleteEntity(grid,counter)
+function Gameplay:deleteEntity()
   -- remove as torres maracadas
   for i = #self.entities.towers,1,-1 do
     if self.removed.towers[i] then
-      grid:remove(unpack(self.entities.towers[i].gridPos)) -- torna a posição do grid válida de novo
+      self.grid:remove(unpack(self.entities.towers[i].gridPos)) -- torna a posição do grid válida de novo
       self.entities.towers[i].sprite:destroy() -- para de desenhar o sprite
       table.remove(self.entities.towers, i) -- mata a entidade
       self.removed.towers[i] = false
@@ -240,7 +240,7 @@ function Gameplay:deleteEntity(grid,counter)
   -- remove os inimigos marcados
   for i = #self.entities.enemies,1,-1 do
     if self.removed.enemies[i] then
-      counter:add(self.entities.enemies[i].spec.cost)
+      self.counter:add(self.entities.enemies[i].spec.cost)
       self.entities.enemies[i].sprite:destroy() -- para de desenhar o sprite ** bug aqui (index nil value)
       table.remove(self.entities.enemies, i) -- mata a entidade
       self.removed.enemies[i] = false

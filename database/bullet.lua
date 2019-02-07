@@ -1,5 +1,5 @@
 return {
-  name = "Bullet",
+  name = "BULLET",
   speed = 500,
   hitbox = new(Box) { -4, 4, -4, 4 },
   group = 'bullets',

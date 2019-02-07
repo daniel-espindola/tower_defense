@@ -1,0 +1,15 @@
+return {
+  name = "ZOMBIE4",
+  sprite = 'zumbi-bruxa',
+  path = 'enemies.zombie4',
+  power = 70,
+  cost = 7,
+  delay = 2,
+  dir = new (Vec) {-1,0},
+  movement = true,
+  hitbox = new(Box) {-20,20,-20,20},
+  description = ":(",
+  group = 'enemies',
+  max_hp = 130,
+  speed = 25,
+}

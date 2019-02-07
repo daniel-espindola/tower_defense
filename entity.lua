@@ -1,3 +1,4 @@
+
 local Entity = new(Object) {
   spec = nil,
   world = nil,
@@ -20,6 +21,7 @@ function Entity:init()
   self.spec.dir = self.spec.dir or new(Vec) {0,0}
   self.spec.speed = self.spec.speed or 0 
   self.spec.firerate = self.spec.firerate or 0
+  self.counter = self.counter or nil
 end
 
 function Entity:setMovement(movement)
@@ -32,6 +34,11 @@ function Entity:update(dt)
   self.cooldown = self.cooldown + dt
   
   while self.cooldown > 1 / self.spec.firerate do
+    if (self.spec.name == 'MINERADORA') then -- gambiarra do bem pra reutilizar o código de tiros das torres
+      self.counter:add(self.spec.power) -- a mineradora ao invés de atirar gera dinheiro pro player, qtd de dinheiro é o power da torre
+      self.cooldown = 0
+      break;
+    end
     self.cooldown = self.cooldown - 1 / self.spec.firerate
     local dir = self.spec.bullet_offset -- Deslocamento da bala em relação à torre, e.g: (-1,.35) spawnaria a bala ao nordeste da torre
     local pos = self.pos - dir
