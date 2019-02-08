@@ -34,7 +34,7 @@ function Entity:update(dt)
   self.cooldown = self.cooldown + dt
   
   while self.cooldown > 1 / self.spec.firerate do
-    if (self.spec.name == 'MINERADORA') then -- gambiarra do bem pra reutilizar o código de tiros das torres
+    if (self.spec.name == 'MINER') then -- gambiarra do bem pra reutilizar o código de tiros das torres
       self.counter:add(self.spec.power) -- a mineradora ao invés de atirar gera dinheiro pro player, qtd de dinheiro é o power da torre
       self.cooldown = 0
       break;

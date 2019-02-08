@@ -2,7 +2,7 @@ return {
   name = "ZOMBIE4",
   sprite = 'zumbi-bruxa',
   path = 'enemies.zombie4',
-  power = 70,
+  power = 50,
   cost = 7,
   delay = 2,
   dir = new (Vec) {-1,0},
